@@ -1,6 +1,7 @@
 import random
 import simpy
 import numpy
+import matplotlib.pyplot as plt
 
 #Definimos una semilla por si queremos datos constantes
 SEMILLA = 42
@@ -31,31 +32,33 @@ reaccion = 2
 #Definimos las colas para Aramberri
 COLA_A = 0
 MAX_COLA_A = 0
+NOMBRE_A = numpy.array([])
 ESPERA_A = numpy.array([])
 #Definimos las colas para Rayon
 COLA_R = 0
 MAX_COLA_R = 0
+COLA_REAL_R = numpy.array([])
 ESPERA_R = numpy.array([])
 
 
-def llegadaAramberri(env, numero, contador):
+def llegadaAramberri(env, numero, server):
         for i in range(numero):
-                a= auto(env, 'Auto Aramberri %02d'%i, contador,1)
+                a= auto(env, 'Auto Aramberri %02d'%i, server,1)
                 env.process(a)
                 tiempo_llegada = random.uniform(LLEGADA_ARAMBERRI[0],LLEGADA_ARAMBERRI[1])
                 yield env.timeout(tiempo_llegada)#Retorna un objeto iterable 
 
-def llegadaRayonUno(env, numero, contador):
+def llegadaRayonUno(env, numero, server):
         for i in range(numero):
                 #Este primer if controla la llegada de 8 a 9 por Rayon
-                if env.now < 76:
-                        a= autoR(env, 'Auto Rayon de 8 a 9 %02d'%i, contador,2)
+                if env.now < 3600:
+                        a= autoR(env, 'Auto Rayon de 8 a 9 %02d'%i, server,2)
                         env.process(a)
                         tiempo_llegada = random.uniform(LLEGADA_RAYON_U[0],LLEGADA_RAYON_U[1])
                         yield env.timeout(tiempo_llegada)#Retorna un objeto iterable 
                 #Este primer if controla la llegada de 9 a 10 por Rayon
-                if env.now >= 76:
-                        a= autoR(env, 'Auto Rayon de 9 a 10 %02d'%i, contador,2)
+                if env.now >= 3600:
+                        a= autoR(env, 'Auto Rayon de 9 a 10 %02d'%i, server,2)
                         env.process(a)
                         tiempo_llegada = random.uniform(LLEGADA_RAYON_D[0],LLEGADA_RAYON_D[1])
                         yield env.timeout(tiempo_llegada)#Retorna un objeto iterable 
@@ -68,13 +71,11 @@ def llegadaRayonUno(env, numero, contador):
 def auto (env, nombre, servidor,id):
         #El carro llega y se va cuando esta en verde y es el primero
         llegada = env.now
-        print ('%7.2f'%(env.now)," Llega el carro ", nombre)
+        #print ('%7.2f'%(env.now)," Llega el carro ", nombre)
         global COLA_A
         global MAX_COLA_A
         global ESPERA_A
-        global COLA_R
-        global MAX_COLA_R
-        global ESPERA_R
+        global NOMBRE_A
         #Atendemos a los carros (retorno del yield)
         #With ejecuta un iterador sin importar si hay excepciones o no
         if id==1:
@@ -88,10 +89,11 @@ def auto (env, nombre, servidor,id):
                     COLA_A = COLA_A - 1
                     espera = env.now - llegada
                     ESPERA_A = numpy.append(ESPERA_A,espera)
+                    NOMBRE_A = numpy.append(NOMBRE_A,nombre)
             
                     #print('%7.2f'%(env.now), " El auto ", nombre, " espera a pasar el semaforo ", espera)
                     yield env.timeout(reaccion)
-                    print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
+                    #print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
 
                 else:
                     yield env.timeout(semaforo - env.now)
@@ -100,22 +102,22 @@ def auto (env, nombre, servidor,id):
                         COLA_A = COLA_A - 1
                         espera = env.now - llegada
                         ESPERA_A = numpy.append(ESPERA_A,espera)
-                        
+                        NOMBRE_A = numpy.append(NOMBRE_A,nombre)
+
                         #print('%7.2f'%(env.now), " El auto ", nombre, " espera a pasar el semaforo ", espera)
                         yield env.timeout(reaccion)
-                        print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
+                        #print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
 
         
 def autoR (env, nombre, servidor,id):
         #El carro llega y se va cuando esta en verde y es el primero
         llegada = env.now
-        print ('%7.2f'%(env.now)," Llega el carro ", nombre)
-        global COLA_A
-        global MAX_COLA_A
-        global ESPERA_A
+        #print ('%7.2f'%(env.now)," Llega el carro ", nombre)
         global COLA_R
         global MAX_COLA_R
         global ESPERA_R
+        global NOMBRE_R
+
         #Atendemos a los carros (retorno del yield)
         #With ejecuta un iterador sin importar si hay excepciones o no
         if id==2:
@@ -129,10 +131,11 @@ def autoR (env, nombre, servidor,id):
                     COLA_R = COLA_R - 1
                     espera = env.now - llegada
                     ESPERA_R = numpy.append(ESPERA_R,espera)
-            
+                    NOMBRE_R = numpy.append(NOMBRE_A,nombre)
+
                     #print('%7.2f'%(env.now), " El auto ", nombre, " espera a pasar el semaforo ", espera)
                     yield env.timeout(reaccion)
-                    print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
+                    #print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
 
                 else:
                     yield env.timeout(semaforo - env.now)
@@ -141,10 +144,11 @@ def autoR (env, nombre, servidor,id):
                         COLA_R = COLA_R - 1
                         espera = env.now - llegada
                         ESPERA_R = numpy.append(ESPERA_R,espera)
-                        
+                        NOMBRE_R = numpy.append(NOMBRE_A,nombre)
+
                         #print('%7.2f'%(env.now), " El auto ", nombre, " espera a pasar el semaforo ", espera)
                         yield env.timeout(reaccion)
-                        print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
+                        #print('%7.2f'%(env.now), " Pasa el semaforo el auto: ", nombre)
 
         
 ##########################################################################
@@ -171,7 +175,7 @@ env.process(llegadaAramberri (env,ARAMBERRI, servidor))
 env.process(llegadaRayonUno (env,RAYON_U, servidor2))
 control = True
 #Asignamos en segundos las 2 horas de simulacion
-while env.now < 200:
+while env.now < 7200:
         env.run(until=semaforo)
         if control :
             control = False
@@ -180,3 +184,9 @@ while env.now < 200:
         else:
             control = True
             semaforo +=verdeAramberri
+plt.plot(NOMBRE_A,ESPERA_A)
+plt.show()
+plt.plot(NOMBRE_R,ESPERA_R)
+plt.show()
+
+print("ahora se deberia mostrar la grafica")
